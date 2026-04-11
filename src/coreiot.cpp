@@ -1,8 +1,8 @@
 #include "coreiot.h"
-
+#include "global.h"
 // ----------- CONFIGURE THESE! -----------
-const char* coreIOT_Server = "10.235.76.226";  
-const char* coreIOT_Token = "g7drm1amhd3dchr379xu";   // Device Access Token
+const char* coreIOT_Server = "app.coreiot.io";  
+const char* coreIOT_Token = "db0rvmlwchopvcde422o";   // Device Access Token
 const int   mqttPort = 1883;
 // ----------------------------------------
 
@@ -81,14 +81,15 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 void setup_coreiot(){
 
-  //Serial.print("Connecting to WiFi...");
-  //WiFi.begin(wifi_ssid, wifi_password);
-  //while (WiFi.status() != WL_CONNECTED) {
+//   Serial.print("Connecting to WiFi...");
+//   WiFi.begin(wifi_ssid, wifi_password);
+//   while (WiFi.status() != WL_CONNECTED) {
   
-  // while (isWifiConnected == false) {
-  //   delay(500);
-  //   Serial.print(".");
-  // }
+//   while (isWifiConnected == false) {
+//     delay(500);
+//     Serial.print(".");
+//   }
+// }
 
   while(1){
     if (xSemaphoreTake(xBinarySemaphoreInternet, portMAX_DELAY)) {

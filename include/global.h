@@ -15,6 +15,12 @@ extern String CORE_IOT_TOKEN;
 extern String CORE_IOT_SERVER;
 extern String CORE_IOT_PORT;
 
+// Local convenience variables (defined in global.cpp)
+extern String ssid;
+extern String password;
+extern String wifi_ssid;
+extern String wifi_password;
+
 extern boolean isWifiConnected;
 extern SemaphoreHandle_t xBinarySemaphoreInternet;
 extern SemaphoreHandle_t xSemaphoreLED;

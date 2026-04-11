@@ -77,8 +77,7 @@ void led_blinky(void *pvParameters){
       }
     }
 
-    // small sleep so task remains responsive to semaphore notifications;
-    // choose 50ms as a balance between responsiveness and CPU usage.
+    
     vTaskDelay(pdMS_TO_TICKS(50));
   }
 }

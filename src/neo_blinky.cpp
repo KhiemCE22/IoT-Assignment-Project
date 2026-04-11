@@ -1,4 +1,5 @@
 #include "neo_blinky.h"
+#include "global.h"
 /*
   neo_blinky task
 
