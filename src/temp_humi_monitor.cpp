@@ -31,6 +31,14 @@ void temp_humi_monitor(void *pvParameters){
         glob_temperature = temperature;
         glob_humidity = humidity;
 
+                // Notify interested tasks (LED) that a new temperature sample is available.
+                // This uses a binary semaphore to signal the `led_blinky` task so it
+                // can update its blink behavior in response to temperature changes.
+                if (xSemaphoreGive(xSemaphoreLED) != pdTRUE) {
+                    // If give failed, nothing critical to do here; LED will update
+                    // on the next successful sample.
+                }
+
         // Print the results
         
         Serial.print("Humidity: ");

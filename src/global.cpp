@@ -14,3 +14,6 @@ String wifi_ssid = "abcde";
 String wifi_password = "123456789";
 boolean isWifiConnected = false;
 SemaphoreHandle_t xBinarySemaphoreInternet = xSemaphoreCreateBinary();
+// Semaphore used to notify the LED task that a new temperature
+// sample is available and it should re-evaluate its blink pattern.
+SemaphoreHandle_t xSemaphoreLED = xSemaphoreCreateBinary();

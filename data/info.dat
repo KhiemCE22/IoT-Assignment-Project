@@ -1,0 +1,7 @@
+{
+"WIFI_SSID":"MyHomeSSID",
+"WIFI_PASS":"MyWifiPass",
+"CORE_IOT_TOKEN":"your_token_here",
+"CORE_IOT_SERVER":"app.coreiot.io",
+"CORE_IOT_PORT":"1883"
+}
