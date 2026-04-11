@@ -38,6 +38,11 @@ void temp_humi_monitor(void *pvParameters){
                     // If give failed, nothing critical to do here; LED will update
                     // on the next successful sample.
                 }
+                // Also notify the NeoPixel task that humidity was updated so it can
+                // change the color according to the current humidity level.
+                if (xSemaphoreGive(xSemaphoreNeo) != pdTRUE) {
+                    // Non-critical if give fails; NeoPixel will update on next sample.
+                }
 
         // Print the results
         

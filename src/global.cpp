@@ -17,3 +17,6 @@ SemaphoreHandle_t xBinarySemaphoreInternet = xSemaphoreCreateBinary();
 // Semaphore used to notify the LED task that a new temperature
 // sample is available and it should re-evaluate its blink pattern.
 SemaphoreHandle_t xSemaphoreLED = xSemaphoreCreateBinary();
+// Semaphore used to notify the NeoPixel task that a new humidity
+// sample is available and it should update its color.
+SemaphoreHandle_t xSemaphoreNeo = xSemaphoreCreateBinary();

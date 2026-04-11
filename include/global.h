@@ -18,4 +18,5 @@ extern String CORE_IOT_PORT;
 extern boolean isWifiConnected;
 extern SemaphoreHandle_t xBinarySemaphoreInternet;
 extern SemaphoreHandle_t xSemaphoreLED;
+extern SemaphoreHandle_t xSemaphoreNeo;
 #endif
