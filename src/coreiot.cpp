@@ -91,8 +91,9 @@ void setup_coreiot(){
 //   }
 // }
 
+  // Wait until internet is available
   while(1){
-    if (xSemaphoreTake(xBinarySemaphoreInternet, portMAX_DELAY)) {
+    if (take_internet_semaphore(portMAX_DELAY) == pdTRUE) {
       break;
     }
     delay(500);
@@ -102,7 +103,9 @@ void setup_coreiot(){
 
   Serial.println(" Connected!");
 
-  client.setServer(CORE_IOT_SERVER.c_str(), CORE_IOT_PORT.toInt());
+  String token, server, port;
+  get_core_iot_info(token, server, port);
+  if (!server.isEmpty()) client.setServer(server.c_str(), port.toInt());
   client.setCallback(callback);
 
 }
@@ -119,8 +122,11 @@ void coreiot_task(void *pvParameters){
         client.loop();
 
         // Sample payload, publish to 'v1/devices/me/telemetry'
-        String payload = "{\"temperature\":" + String(glob_temperature) +  ",\"humidity\":" + String(glob_humidity) + "}";
-        
+        SensorData_t sd;
+        if (!get_last_sensor_data(sd)) {
+          sd.temperature = NAN; sd.humidity = NAN;
+        }
+        String payload = "{\"temperature\":" + String(sd.temperature) +  ",\"humidity\":" + String(sd.humidity) + "}";
         client.publish("v1/devices/me/telemetry", payload.c_str());
 
 

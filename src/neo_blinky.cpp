@@ -29,14 +29,16 @@ void neo_blinky(void *pvParameters){
 
     while(1) {
         // If a new humidity sample is available, update the color mapping
-        if (xSemaphoreTake(xSemaphoreNeo, 0) == pdTRUE) {
-            float h = glob_humidity;
+        if (take_neo_semaphore(0) == pdTRUE) {
+            SensorData_t sd;
+            float h = NAN;
+            if (get_last_sensor_data(sd)) h = sd.humidity;
 
             if (h < 0) {
                 currentColor = strip.Color(80, 0, 80); // purple = error
-            } else if (h < 30.0) {
+            } else if (h < 40.0) {
                 currentColor = strip.Color(0, 0, 150); // blue = dry
-            } else if (h < 60.0) {
+            } else if (h < 70.0) {
                 currentColor = strip.Color(0, 150, 0); // green = normal
             } else if (h < 80.0) {
                 currentColor = strip.Color(150, 150, 0); // yellow = humid

@@ -1,4 +1,5 @@
 #include "led_blinky.h"
+#include "global.h"
 /*
   led_blinky task
 
@@ -33,8 +34,10 @@ void led_blinky(void *pvParameters){
 
   while(1) {
     // If a new temperature sample is available, update the blink pattern.
-    if (xSemaphoreTake(xSemaphoreLED, 0) == pdTRUE) {
-      float t = glob_temperature;
+    if (take_led_semaphore(0) == pdTRUE) {
+      SensorData_t sd;
+      float t = NAN;
+      if (get_last_sensor_data(sd)) t = sd.temperature;
 
       // Choose blink pattern based on temperature ranges
       if (t < 0) {
