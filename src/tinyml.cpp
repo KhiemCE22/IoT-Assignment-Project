@@ -1,4 +1,5 @@
 #include "tinyml.h"
+#include "global.h"
 
 // Globals, for the convenience of one-shot setup.
 namespace
@@ -53,9 +54,14 @@ void tiny_ml_task(void *pvParameters)
     {
 
         // Prepare input data (e.g., sensor readings)
-        // For a simple example, let's assume a single float input
-        input->data.f[0] = glob_temperature;
-        input->data.f[1] = glob_humidity;
+        SensorData_t sd;
+        if (get_last_sensor_data(sd)) {
+            input->data.f[0] = sd.temperature;
+            input->data.f[1] = sd.humidity;
+        } else {
+            input->data.f[0] = NAN;
+            input->data.f[1] = NAN;
+        }
 
         // Run inference
         TfLiteStatus invoke_status = interpreter->Invoke();

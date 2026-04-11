@@ -1,4 +1,5 @@
 #include "task_check_info.h"
+#include "global.h"
 
 void Load_info_File()
 {
@@ -15,11 +16,13 @@ void Load_info_File()
   }
   else
   {
-    WIFI_SSID = strdup(doc["WIFI_SSID"]);
-    WIFI_PASS = strdup(doc["WIFI_PASS"]);
-    CORE_IOT_TOKEN = strdup(doc["CORE_IOT_TOKEN"]);
-    CORE_IOT_SERVER = strdup(doc["CORE_IOT_SERVER"]);
-    CORE_IOT_PORT = strdup(doc["CORE_IOT_PORT"]);
+    String ssid = String((const char*)doc["WIFI_SSID"]);
+    String pass = String((const char*)doc["WIFI_PASS"]);
+    String token = String((const char*)doc["CORE_IOT_TOKEN"]);
+    String server = String((const char*)doc["CORE_IOT_SERVER"]);
+    String port = String((const char*)doc["CORE_IOT_PORT"]);
+    set_wifi_credentials(ssid, pass);
+    set_core_iot_info(token, server, port);
   }
   file.close();
 }
@@ -70,7 +73,9 @@ bool check_info_File(bool check)
     Load_info_File();
   }
   
-  if (WIFI_SSID.isEmpty() && WIFI_PASS.isEmpty())
+  String ssid, pass;
+  get_wifi_credentials(ssid, pass);
+  if (ssid.isEmpty() && pass.isEmpty())
   {
     if (!check)
     {

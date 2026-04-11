@@ -17,6 +17,8 @@
 void setup()
 {
   Serial.begin(115200);
+  // Initialize RTOS-backed system state (queues/semaphores)
+  system_state_init();
   check_info_File(0);
 
   xTaskCreate(led_blinky, "Task LED Blink", 2048, NULL, 2, NULL);

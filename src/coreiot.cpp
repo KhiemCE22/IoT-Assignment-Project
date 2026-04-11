@@ -1,8 +1,8 @@
 #include "coreiot.h"
-
+#include "global.h"
 // ----------- CONFIGURE THESE! -----------
-const char* coreIOT_Server = "10.235.76.226";  
-const char* coreIOT_Token = "g7drm1amhd3dchr379xu";   // Device Access Token
+const char* coreIOT_Server = "app.coreiot.io";  
+const char* coreIOT_Token = "db0rvmlwchopvcde422o";   // Device Access Token
 const int   mqttPort = 1883;
 // ----------------------------------------
 
@@ -81,17 +81,19 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 void setup_coreiot(){
 
-  //Serial.print("Connecting to WiFi...");
-  //WiFi.begin(wifi_ssid, wifi_password);
-  //while (WiFi.status() != WL_CONNECTED) {
+//   Serial.print("Connecting to WiFi...");
+//   WiFi.begin(wifi_ssid, wifi_password);
+//   while (WiFi.status() != WL_CONNECTED) {
   
-  // while (isWifiConnected == false) {
-  //   delay(500);
-  //   Serial.print(".");
-  // }
+//   while (isWifiConnected == false) {
+//     delay(500);
+//     Serial.print(".");
+//   }
+// }
 
+  // Wait until internet is available
   while(1){
-    if (xSemaphoreTake(xBinarySemaphoreInternet, portMAX_DELAY)) {
+    if (take_internet_semaphore(portMAX_DELAY) == pdTRUE) {
       break;
     }
     delay(500);
@@ -101,7 +103,9 @@ void setup_coreiot(){
 
   Serial.println(" Connected!");
 
-  client.setServer(CORE_IOT_SERVER.c_str(), CORE_IOT_PORT.toInt());
+  String token, server, port;
+  get_core_iot_info(token, server, port);
+  if (!server.isEmpty()) client.setServer(server.c_str(), port.toInt());
   client.setCallback(callback);
 
 }
@@ -118,8 +122,11 @@ void coreiot_task(void *pvParameters){
         client.loop();
 
         // Sample payload, publish to 'v1/devices/me/telemetry'
-        String payload = "{\"temperature\":" + String(glob_temperature) +  ",\"humidity\":" + String(glob_humidity) + "}";
-        
+        SensorData_t sd;
+        if (!get_last_sensor_data(sd)) {
+          sd.temperature = NAN; sd.humidity = NAN;
+        }
+        String payload = "{\"temperature\":" + String(sd.temperature) +  ",\"humidity\":" + String(sd.humidity) + "}";
         client.publish("v1/devices/me/telemetry", payload.c_str());
 
 

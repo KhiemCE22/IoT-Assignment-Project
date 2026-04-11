@@ -1,4 +1,5 @@
 #include "temp_humi_monitor.h"
+#include "global.h"
 DHT20 dht20;
 LiquidCrystal_I2C lcd(33,16,2);
 
@@ -42,15 +43,15 @@ void temp_humi_monitor(void *pvParameters){
             humidity = -1;
         }
 
-        // Update globals for other tasks
-        glob_temperature = temperature;
-        glob_humidity = humidity;
+        // Push sensor data to queue and update last-known value.
+        SensorData_t d;
+        d.temperature = temperature;
+        d.humidity = humidity;
+        push_sensor_data(d, 0);
 
         // Notify display and LED tasks that fresh data is available.
-        // These calls are non-blocking notifications; failure to give is
-        // non-fatal and will simply postpone the update until the next sample.
-        xSemaphoreGive(xSemaphoreLED);
-        xSemaphoreGive(xSemaphoreNeo);
+        give_led_semaphore();
+        give_neo_semaphore();
 
         // Log to serial
         Serial.print("Humidity: ");

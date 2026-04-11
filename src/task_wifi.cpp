@@ -1,4 +1,5 @@
 #include "task_wifi.h"
+#include "global.h"
 
 void startAP()
 {
@@ -10,28 +11,25 @@ void startAP()
 
 void startSTA()
 {
-    if (WIFI_SSID.isEmpty())
-    {
+    String ssid, pass;
+    get_wifi_credentials(ssid, pass);
+    if (ssid.isEmpty()) {
         vTaskDelete(NULL);
     }
 
     WiFi.mode(WIFI_STA);
-
-    if (WIFI_PASS.isEmpty())
-    {
-        WiFi.begin(WIFI_SSID.c_str());
-    }
-    else
-    {
-        WiFi.begin(WIFI_SSID.c_str(), WIFI_PASS.c_str());
+    if (pass.isEmpty()) {
+        WiFi.begin(ssid.c_str());
+    } else {
+        WiFi.begin(ssid.c_str(), pass.c_str());
     }
 
     while (WiFi.status() != WL_CONNECTED)
     {
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
-    //Give a semaphore here
-    xSemaphoreGive(xBinarySemaphoreInternet);
+    // Notify internet-ready via API
+    give_internet_semaphore();
 }
 
 bool Wifi_reconnect()
