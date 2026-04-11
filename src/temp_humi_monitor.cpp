@@ -5,54 +5,80 @@ LiquidCrystal_I2C lcd(33,16,2);
 
 void temp_humi_monitor(void *pvParameters){
 
+    // Sensor / I2C initialization
     Wire.begin(11, 12);
+    // Serial is usually started in main.setup(); duplicate start is safe.
     Serial.begin(115200);
     dht20.begin();
 
+    // Initialize LCD (if present)
+    lcd.begin();
+    lcd.backlight();
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Temp/Humi Monitor");
+    lcd.setCursor(0,1);
+    lcd.print("Initializing...");
+
+    const TickType_t SAMPLE_INTERVAL = pdMS_TO_TICKS(5000); // 5s
+    const int READ_RETRIES = 3;
+
     while (1){
-        /* code */
-        
-        dht20.read();
-        // Reading temperature in Celsius
-        float temperature = dht20.getTemperature();
-        // Reading humidity
-        float humidity = dht20.getHumidity();
+        float temperature = NAN;
+        float humidity = NAN;
 
-        
-
-        // Check if any reads failed and exit early
-        if (isnan(temperature) || isnan(humidity)) {
-            Serial.println("Failed to read from DHT sensor!");
-            temperature = humidity =  -1;
-            //return;
+        // Attempt sensor reads with retries to reduce transient errors
+        for (int attempt = 0; attempt < READ_RETRIES; ++attempt) {
+            dht20.read();
+            temperature = dht20.getTemperature();
+            humidity = dht20.getHumidity();
+            if (!isnan(temperature) && !isnan(humidity)) break;
+            vTaskDelay(pdMS_TO_TICKS(200));
         }
 
-        //Update global variables for temperature and humidity
+        if (isnan(temperature) || isnan(humidity)) {
+            Serial.println("DHT read failed after retries");
+            temperature = -1;
+            humidity = -1;
+        }
+
+        // Update globals for other tasks
         glob_temperature = temperature;
         glob_humidity = humidity;
 
-                // Notify interested tasks (LED) that a new temperature sample is available.
-                // This uses a binary semaphore to signal the `led_blinky` task so it
-                // can update its blink behavior in response to temperature changes.
-                if (xSemaphoreGive(xSemaphoreLED) != pdTRUE) {
-                    // If give failed, nothing critical to do here; LED will update
-                    // on the next successful sample.
-                }
-                // Also notify the NeoPixel task that humidity was updated so it can
-                // change the color according to the current humidity level.
-                if (xSemaphoreGive(xSemaphoreNeo) != pdTRUE) {
-                    // Non-critical if give fails; NeoPixel will update on next sample.
-                }
+        // Notify display and LED tasks that fresh data is available.
+        // These calls are non-blocking notifications; failure to give is
+        // non-fatal and will simply postpone the update until the next sample.
+        xSemaphoreGive(xSemaphoreLED);
+        xSemaphoreGive(xSemaphoreNeo);
 
-        // Print the results
-        
+        // Log to serial
         Serial.print("Humidity: ");
         Serial.print(humidity);
         Serial.print("%  Temperature: ");
         Serial.print(temperature);
-        Serial.println("°C");
-        
-        vTaskDelay(5000);
+        Serial.println(" C");
+
+        // Update LCD (two-line)
+        lcd.clear();
+        lcd.setCursor(0,0);
+        if (temperature < -0.5) {
+            lcd.print("Temp: -- C");
+        } else {
+            lcd.print("Temp: ");
+            lcd.print(temperature);
+            lcd.print(" C");
+        }
+        lcd.setCursor(0,1);
+        if (humidity < -0.5) {
+            lcd.print("Humi: -- %");
+        } else {
+            lcd.print("Humi: ");
+            lcd.print(humidity);
+            lcd.print(" %");
+        }
+
+        vTaskDelay(SAMPLE_INTERVAL);
     }
-    
+
 }
