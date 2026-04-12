@@ -1,5 +1,6 @@
 #include "task_wifi.h"
 #include "global.h"
+#include "task_webserver.h"
 
 void startAP()
 {
@@ -29,6 +30,11 @@ void startSTA()
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
     // Notify internet-ready via API
+    // Log and broadcast STA IP for easy discovery
+    {
+        String ipmsg = "STA IP address: " + WiFi.localIP().toString();
+        Webserver_log(ipmsg);
+    }
     give_internet_semaphore();
 }
 

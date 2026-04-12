@@ -39,7 +39,58 @@ function onMessage(event) {
     console.log("📩 Nhận:", event.data);
     try {
         var data = JSON.parse(event.data);
-        // Có thể thêm xử lý riêng nếu cần (ví dụ cập nhật trạng thái)
+
+        // Nếu đây là thông điệp trạng thái (gửi khi client kết nối)
+        if (data.type && data.type === 'status') {
+            const statusEl = document.getElementById('deviceStatus');
+            const sta = data.sta || '';
+            const ap = data.ap || '';
+            let text = '';
+            if (sta && sta !== '0.0.0.0') {
+                text += `STA IP: <a href="http://${sta}" target="_blank">${sta}</a>`;
+            } else {
+                text += 'STA IP: (not connected)';
+            }
+            text += ' — ';
+            if (ap && ap !== '0.0.0.0') {
+                text += `AP IP: ${ap}`;
+            } else {
+                text += 'AP IP: (none)';
+            }
+            if (statusEl) statusEl.innerHTML = 'Trạng thái thiết bị: ' + text;
+
+            // If config is present, populate the info section fields
+            if (data.config) {
+                const cfg = data.config;
+                const s = document.getElementById('cfg_ssid');
+                const p = document.getElementById('cfg_pass');
+                const t = document.getElementById('cfg_token');
+                const srv = document.getElementById('cfg_server');
+                const prt = document.getElementById('cfg_port');
+                if (s) s.textContent = cfg.ssid || '(chưa có)';
+                cfgPasswordActual = cfg.password || '';
+                updatePasswordDisplay();
+                if (t) t.textContent = cfg.token || '(chưa có)';
+                if (srv) srv.textContent = cfg.server || '(chưa có)';
+                if (prt) prt.textContent = cfg.port || '(chưa có)';
+            }
+
+            return; // status handled
+        }
+        // Chuẩn hóa giá trị nhiệt độ/độ ẩm nếu có
+        var t = (data.temperature !== undefined && !isNaN(parseFloat(data.temperature))) ? parseFloat(data.temperature) : null;
+        var h = (data.humidity !== undefined && !isNaN(parseFloat(data.humidity))) ? parseFloat(data.humidity) : null;
+
+        if (t !== null || h !== null) {
+            // Hiện container gauge lần đầu nhận dữ liệu
+            if (!window.hasSensorData) {
+                const gauges = document.querySelector('.gauges-container');
+                if (gauges) gauges.style.display = 'flex';
+                window.hasSensorData = true;
+            }
+            if (t !== null && gaugeTemp) gaugeTemp.refresh(t);
+            if (h !== null && gaugeHumi) gaugeHumi.refresh(h);
+        }
     } catch (e) {
         console.warn("Không phải JSON hợp lệ:", event.data);
     }
@@ -59,12 +110,20 @@ function showSection(id, event) {
 
 
 // ==================== HOME GAUGES ====================
+// make gauges accessible from onMessage
+var gaugeTemp = null;
+var gaugeHumi = null;
 window.onload = function () {
-    const gaugeTemp = new JustGage({
+    // hide gauges until first sensor data is received
+    window.hasSensorData = false;
+    const gauges = document.querySelector('.gauges-container');
+    if (gauges) gauges.style.display = 'none';
+
+    gaugeTemp = new JustGage({
         id: "gauge_temp",
-        value: 26,
-        min: -10,
-        max: 50,
+        value: 0,
+        min: 0,
+        max: 100,
         donut: true,
         pointer: false,
         gaugeWidthScale: 0.25,
@@ -73,9 +132,9 @@ window.onload = function () {
         levelColors: ["#00BCD4", "#4CAF50", "#FFC107", "#F44336"]
     });
 
-    const gaugeHumi = new JustGage({
+    gaugeHumi = new JustGage({
         id: "gauge_humi",
-        value: 60,
+        value: 0,
         min: 0,
         max: 100,
         donut: true,
@@ -85,12 +144,27 @@ window.onload = function () {
         levelColorsGradient: true,
         levelColors: ["#42A5F5", "#00BCD4", "#0288D1"]
     });
-
-    setInterval(() => {
-        gaugeTemp.refresh(Math.floor(Math.random() * 15) + 20);
-        gaugeHumi.refresh(Math.floor(Math.random() * 40) + 40);
-    }, 3000);
 };
+
+// ==================== CONFIG UI HELPERS ====================
+var cfgPasswordActual = '';
+var cfgShowPassword = false;
+function togglePassword() {
+    cfgShowPassword = !cfgShowPassword;
+    const btn = document.getElementById('togglePassBtn');
+    if (btn) btn.textContent = cfgShowPassword ? 'Ẩn' : 'Hiện';
+    updatePasswordDisplay();
+}
+function updatePasswordDisplay() {
+    const el = document.getElementById('cfg_pass');
+    if (!el) return;
+    if (!cfgPasswordActual) el.textContent = '(chưa có)';
+    else el.textContent = cfgShowPassword ? cfgPasswordActual : '•'.repeat(Math.min(20, cfgPasswordActual.length));
+}
+function requestConfig() {
+    const msg = JSON.stringify({ page: 'get_config' });
+    Send_Data(msg);
+}
 
 
 // ==================== DEVICE FUNCTIONS ====================
