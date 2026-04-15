@@ -1,7 +1,7 @@
 {
 "WIFI_SSID":"",
 "WIFI_PASS":"",
-"CORE_IOT_TOKEN":"db0rvmlwchopvcde422o",
-"CORE_IOT_SERVER":"app.coreiot.io",
-"CORE_IOT_PORT":"1883"
+"CORE_IOT_TOKEN":"",
+"CORE_IOT_SERVER":"",
+"CORE_IOT_PORT":""
 }

@@ -3,6 +3,13 @@
 
 void Load_info_File()
 {
+  // Ensure LittleFS is mounted before attempting to read
+  if (!LittleFS.begin(true))
+  {
+    Serial.println("❌ LittleFS begin failed in Load_info_File");
+    return;
+  }
+
   File file = LittleFS.open("/info.dat", "r");
   if (!file)
   {
@@ -48,6 +55,12 @@ void Save_info_File(String wifi_ssid, String wifi_pass, String CORE_IOT_TOKEN, S
   doc["CORE_IOT_SERVER"] = CORE_IOT_SERVER;
   doc["CORE_IOT_PORT"] = CORE_IOT_PORT;
 
+  // Ensure LittleFS is mounted before attempting to write
+  if (!LittleFS.begin(true))
+  {
+    Serial.println("❌ LittleFS begin failed in Save_info_File");
+  }
+
   File configFile = LittleFS.open("/info.dat", "w");
   if (configFile)
   {
@@ -58,7 +71,27 @@ void Save_info_File(String wifi_ssid, String wifi_pass, String CORE_IOT_TOKEN, S
   {
     Serial.println('Unable to save the configuration.');
   }
-  ESP.restart();
+  // Apply credentials in-memory so background STA attempt can read them
+  set_wifi_credentials(wifi_ssid, wifi_pass);
+  set_core_iot_info(CORE_IOT_TOKEN, CORE_IOT_SERVER, CORE_IOT_PORT);
+
+  // Notify clients we're starting connection attempt and include saved config
+  String status = "{";
+  status += "\"type\":\"status\",";
+  status += "\"state\":\"connecting\",";
+  status += "\"sta\":\"0.0.0.0\",";
+  status += "\"ap\":\"" + WiFi.softAPIP().toString() + "\",";
+  status += "\"config\":{";
+  status += "\"ssid\":\"" + wifi_ssid + "\",";
+  status += "\"password\":\"" + wifi_pass + "\",";
+  status += "\"token\":\"" + CORE_IOT_TOKEN + "\",";
+  status += "\"server\":\"" + CORE_IOT_SERVER + "\",";
+  status += "\"port\":\"" + CORE_IOT_PORT + "\"";
+  status += "}}";
+  Webserver_sendata(status);
+
+  // Start STA connection asynchronously while keeping AP/webserver alive
+  startSTAAsync();
 };
 
 bool check_info_File(bool check)
