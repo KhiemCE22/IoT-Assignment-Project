@@ -1,13 +1,13 @@
 #include "global.h"
 // Internal static state: not exposed as globals in headers.
 static QueueHandle_t sensorQueue = NULL;
+static QueueHandle_t ledQueue = NULL;
+static QueueHandle_t neoQueue = NULL;
 static SensorData_t lastSensorData = { NAN, NAN };
 static SemaphoreHandle_t semInternet = NULL;
-static SemaphoreHandle_t semLED = NULL;
-static SemaphoreHandle_t semNeo = NULL;
 
-static String wifi_ssid_internal = "Saigonhome 1 - 2.4G";
-static String wifi_password_internal = "13681368";
+static String wifi_ssid_internal = "";
+static String wifi_password_internal = "";
 static String wifi_user_ssid = "ESP32-YOUR NETWORK HERE!!!";
 static String wifi_user_password = "12345678";
 
@@ -23,8 +23,10 @@ void system_state_init() {
 		sensorQueue = xQueueCreate(5, sizeof(SensorData_t));
 	}
 	if (semInternet == NULL) semInternet = xSemaphoreCreateBinary();
-	if (semLED == NULL) semLED = xSemaphoreCreateBinary();
-	if (semNeo == NULL) semNeo = xSemaphoreCreateBinary();
+
+	// queues for notifying LED and Neo tasks with full SensorData_t copies
+	if (ledQueue == NULL) ledQueue = xQueueCreate(5, sizeof(SensorData_t));
+	if (neoQueue == NULL) neoQueue = xQueueCreate(5, sizeof(SensorData_t));
 }
 
 bool push_sensor_data(const SensorData_t &data, TickType_t ticksToWait){
@@ -44,10 +46,24 @@ bool get_last_sensor_data(SensorData_t &out) {
 }
 
 // semaphore API
-void give_led_semaphore(){ if (semLED) xSemaphoreGive(semLED); }
-BaseType_t take_led_semaphore(TickType_t ticksToWait){ if (semLED) return xSemaphoreTake(semLED, ticksToWait); return pdFALSE; }
-void give_neo_semaphore(){ if (semNeo) xSemaphoreGive(semNeo); }
-BaseType_t take_neo_semaphore(TickType_t ticksToWait){ if (semNeo) return xSemaphoreTake(semNeo, ticksToWait); return pdFALSE; }
+void give_led_semaphore(){ if (ledQueue) xQueueSend(ledQueue, &lastSensorData, 0); }
+BaseType_t take_led_semaphore(TickType_t ticksToWait){ if (ledQueue) {
+	SensorData_t tmp;
+	if (xQueueReceive(ledQueue, &tmp, ticksToWait) == pdTRUE) {
+		lastSensorData = tmp;
+		return pdTRUE;
+	}
+}
+return pdFALSE; }
+void give_neo_semaphore(){ if (neoQueue) xQueueSend(neoQueue, &lastSensorData, 0); }
+BaseType_t take_neo_semaphore(TickType_t ticksToWait){ if (neoQueue) {
+	SensorData_t tmp;
+	if (xQueueReceive(neoQueue, &tmp, ticksToWait) == pdTRUE) {
+		lastSensorData = tmp;
+		return pdTRUE;
+	}
+}
+return pdFALSE; }
 void give_internet_semaphore(){ if (semInternet) xSemaphoreGive(semInternet); }
 BaseType_t take_internet_semaphore(TickType_t ticksToWait){ if (semInternet) return xSemaphoreTake(semInternet, ticksToWait); return pdFALSE; }
 
