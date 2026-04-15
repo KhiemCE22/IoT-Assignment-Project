@@ -39,6 +39,7 @@
       <header>
         <h1>Bảng điều khiển môi trường</h1>
         <p>Giám sát nhiệt độ và độ ẩm theo thời gian thực</p>
+        <p id="deviceStatus" class="status-text">Trạng thái thiết bị: chưa kết nối</p>
       </header>
 
       <div class="gauges-container">
@@ -74,6 +75,19 @@
         <h1>Thông tin thiết bị</h1>
         <p>Chi tiết hệ thống và firmware sẽ hiển thị tại đây.</p>
       </header>
+      <div class="info-card">
+        <h3>Cấu hình đã lưu</h3>
+        <div id="configInfo">
+          <p><strong>SSID:</strong> <span id="cfg_ssid">(chưa có)</span></p>
+          <p><strong>Password:</strong> <span id="cfg_pass">(chưa có)</span>
+            <button id="togglePassBtn" onclick="togglePassword()" class="small-btn">Hiện</button>
+          </p>
+          <p><strong>Token:</strong> <span id="cfg_token">(chưa có)</span></p>
+          <p><strong>Server:</strong> <span id="cfg_server">(chưa có)</span></p>
+          <p><strong>Port:</strong> <span id="cfg_port">(chưa có)</span></p>
+          <p><button id="refreshCfg" onclick="requestConfig()" class="btn">Refresh config</button></p>
+        </div>
+      </div>
     </div>
 
     <!-- CÀI ĐẶT -->

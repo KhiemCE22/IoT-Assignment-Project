@@ -1,5 +1,6 @@
 #include "temp_humi_monitor.h"
 #include "global.h"
+#include "task_webserver.h"
 DHT20 dht20;
 LiquidCrystal_I2C lcd(33,16,2);
 
@@ -53,12 +54,20 @@ void temp_humi_monitor(void *pvParameters){
         give_led_semaphore();
         give_neo_semaphore();
 
-        // Log to serial
-        Serial.print("Humidity: ");
-        Serial.print(humidity);
-        Serial.print("%  Temperature: ");
-        Serial.print(temperature);
-        Serial.println(" C");
+        // Log to serial and web
+        {
+            String line = "Humidity: " + String(humidity) + "%  Temperature: " + String(temperature) + " C";
+            Webserver_log(line);
+        }
+
+        // Send JSON data to connected WebSocket clients (if any)
+        {
+            String payload = "{";
+            payload += "\"temperature\":" + String(temperature) +  ",";
+            payload += "\"humidity\":" + String(humidity);
+            payload += "}";
+            Webserver_sendata(payload);
+        }
 
         // Update LCD (two-line)
         lcd.clear();

@@ -1,8 +1,10 @@
 #include <task_handler.h>
+#include "task_webserver.h"
+#include <WiFi.h>
 
 void handleWebSocketMessage(String message)
 {
-    Serial.println(message);
+    Webserver_log(message);
     StaticJsonDocument<256> doc;
 
     DeserializationError error = deserializeJson(doc, message);
@@ -44,12 +46,12 @@ void handleWebSocketMessage(String message)
         String CORE_IOT_SERVER = doc["value"]["server"].as<String>();
         String CORE_IOT_PORT = doc["value"]["port"].as<String>();
 
-        Serial.println("📥 Nhận cấu hình từ WebSocket:");
-        Serial.println("SSID: " + WIFI_SSID);
-        Serial.println("PASS: " + WIFI_PASS);
-        Serial.println("TOKEN: " + CORE_IOT_TOKEN);
-        Serial.println("SERVER: " + CORE_IOT_SERVER);
-        Serial.println("PORT: " + CORE_IOT_PORT);
+        Webserver_log("📥 Nhận cấu hình từ WebSocket:");
+        Webserver_log("SSID: " + WIFI_SSID);
+        Webserver_log("PASS: " + WIFI_PASS);
+        Webserver_log("TOKEN: " + CORE_IOT_TOKEN);
+        Webserver_log("SERVER: " + CORE_IOT_SERVER);
+        Webserver_log("PORT: " + CORE_IOT_PORT);
 
         // 👉 Gọi hàm lưu cấu hình
         Save_info_File(WIFI_SSID, WIFI_PASS, CORE_IOT_TOKEN, CORE_IOT_SERVER, CORE_IOT_PORT);
@@ -57,5 +59,26 @@ void handleWebSocketMessage(String message)
         // Phản hồi lại client (tùy chọn)
         String msg = "{\"status\":\"ok\",\"page\":\"setting_saved\"}";
         ws.textAll(msg);
+    }
+    else if (doc["page"] == "get_config")
+    {
+        // Return current network status + saved config
+        String ssid, pass, token, server, port;
+        get_wifi_credentials(ssid, pass);
+        get_core_iot_info(token, server, port);
+
+        String status = "{";
+        status += "\"type\":\"status\",";
+        status += "\"sta\":\"" + WiFi.localIP().toString() + "\",";
+        status += "\"ap\":\"" + WiFi.softAPIP().toString() + "\",";
+        status += "\"config\":{";
+        status += "\"ssid\":\"" + ssid + "\",";
+        status += "\"password\":\"" + pass + "\",";
+        status += "\"token\":\"" + token + "\",";
+        status += "\"server\":\"" + server + "\",";
+        status += "\"port\":\"" + port + "\"";
+        status += "}}";
+
+        Webserver_sendata(status);
     }
 }
