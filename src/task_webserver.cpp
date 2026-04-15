@@ -1,14 +1,22 @@
 #include "task_webserver.h"
 #include <WiFi.h>
 #include "global.h"
+#include "task_check_info.h"
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
 bool webserver_isrunning = false;
+// Cache last status JSON to replay when clients reconnect
+String lastStatusJson = "";
 
 void Webserver_sendata(String data)
 {
+    // If this is a status message, cache it so newly connected clients can get it
+    if (data.indexOf("\"type\":\"status\"") >= 0) {
+        lastStatusJson = data;
+    }
+
     if (ws.count() > 0)
     {
         ws.textAll(data); // Gửi đến tất cả client đang kết nối
@@ -51,20 +59,31 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
         // Send current network status (STA and AP IPs) + saved config to the newly connected client
         String ssid, pass, token, server_addr, port;
         get_wifi_credentials(ssid, pass);
-        get_core_iot_info(token, server_addr, port);
-
-        String status = "{";
-        status += "\"type\":\"status\",";
-        status += "\"sta\":\"" + WiFi.localIP().toString() + "\",";
-        status += "\"ap\":\"" + WiFi.softAPIP().toString() + "\",";
-        status += "\"config\":{";
-        status += "\"ssid\":\"" + ssid + "\",";
-        status += "\"password\":\"" + pass + "\",";
-        status += "\"token\":\"" + token + "\",";
-        status += "\"server\":\"" + server_addr + "\",";
-        status += "\"port\":\"" + port + "\"";
-        status += "}}";
-        client->text(status);
+        // If in-memory credentials are empty, try loading persisted config as a fallback
+        if (ssid.isEmpty() && pass.isEmpty()) {
+            Load_info_File();
+            get_wifi_credentials(ssid, pass);
+            get_core_iot_info(token, server_addr, port);
+        } else {
+            get_core_iot_info(token, server_addr, port);
+        }
+        // If we have a cached status (from recent connect attempts), send it first
+        if (lastStatusJson.length() > 0) {
+            client->text(lastStatusJson);
+        } else {
+            String status = "{";
+            status += "\"type\":\"status\",";
+            status += "\"sta\":\"" + WiFi.localIP().toString() + "\",";
+            status += "\"ap\":\"" + WiFi.softAPIP().toString() + "\",";
+            status += "\"config\":{";
+            status += "\"ssid\":\"" + ssid + "\",";
+            status += "\"password\":\"" + pass + "\",";
+            status += "\"token\":\"" + token + "\",";
+            status += "\"server\":\"" + server_addr + "\",";
+            status += "\"port\":\"" + port + "\"";
+            status += "}}";
+            client->text(status);
+        }
     }
     else if (type == WS_EVT_DISCONNECT)
     {

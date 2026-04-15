@@ -33,10 +33,10 @@ bool push_sensor_data(const SensorData_t &data, TickType_t ticksToWait){
 	// update last-known value
 	lastSensorData = data;
 	if (sensorQueue) {
-		// non-blocking if queue full (overwrite behavior isn't available): try to send
+		// non-blocking if queue full: try to send
 		if (xQueueSend(sensorQueue, &data, ticksToWait) == pdTRUE) return true;
 	}
-	return true; // we still updated lastSensorData
+	return true; // still updated lastSensorData
 }
 
 bool get_last_sensor_data(SensorData_t &out) {

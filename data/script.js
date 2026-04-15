@@ -60,8 +60,8 @@ function onMessage(event) {
             if (statusEl) statusEl.innerHTML = 'Trạng thái thiết bị: ' + text;
 
             // If config is present, populate the info section fields
-            if (data.config) {
-                const cfg = data.config;
+            const cfg = data.config || null;
+            if (cfg) {
                 const s = document.getElementById('cfg_ssid');
                 const p = document.getElementById('cfg_pass');
                 const t = document.getElementById('cfg_token');
@@ -74,6 +74,10 @@ function onMessage(event) {
                 if (srv) srv.textContent = cfg.server || '(chưa có)';
                 if (prt) prt.textContent = cfg.port || '(chưa có)';
             }
+
+            // state handling: connecting / connected / failed
+            const state = data.state || null;
+            try { renderStatusExtras(data.sta || '', cfg, state, data); } catch (e) { console.warn('renderStatusExtras failed', e); }
 
             return; // status handled
         }
@@ -93,6 +97,48 @@ function onMessage(event) {
         }
     } catch (e) {
         console.warn("Không phải JSON hợp lệ:", event.data);
+    }
+}
+
+// Render QR code and show Open STA button; try to probe and open STA URL if reachable
+function renderStatusExtras(staIp, cfg, state, raw) {
+    const openBtn = document.getElementById('openStaBtn');
+    const note = document.getElementById('openNote');
+    const qrWrap = document.getElementById('qr');
+    if (!qrWrap) return;
+    // clear previous
+    qrWrap.innerHTML = '';
+    if (!staIp || staIp === '0.0.0.0') {
+        // If in connecting state, still show note and QR for AP or saved config
+        if (state === 'connecting') {
+            if (openBtn) openBtn.style.display = 'none';
+            if (note) note.textContent = 'Đang cố gắng kết nối STA...';
+        } else {
+            if (openBtn) openBtn.style.display = 'none';
+            if (note) note.textContent = 'Thiết bị chưa kết nối STA.';
+        }
+        return;
+    }
+    const url = 'http://' + staIp + '/';
+    // create QR
+    try {
+        new QRCode(qrWrap, { text: url, width: 120, height: 120, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
+    } catch (e) {
+        console.warn('QRCode generation failed', e);
+    }
+    if (openBtn) {
+        openBtn.style.display = 'inline-block';
+        openBtn.onclick = function () { window.open(url, '_blank'); };
+    }
+    // Update note depending on state
+    if (state === 'connected') {
+        if (note) note.textContent = 'STA connected: ' + staIp + ' — opening...';
+        try { window.open(url, '_blank'); } catch (e) { console.warn('open failed', e); }
+    } else if (state === 'connecting') {
+        if (note) note.textContent = 'Đang cố gắng kết nối STA: ' + staIp + '...';
+        // don't force-open yet, but allow user to press the button
+    } else {
+        if (note) note.textContent = 'STA available: ' + staIp;
     }
 }
 
@@ -252,5 +298,14 @@ document.getElementById("settingsForm").addEventListener("submit", function (e) 
     });
 
     Send_Data(settingsJSON);
+    // Update Info UI immediately so user sees saved config before server status arrives
+    cfgPasswordActual = password;
+    updatePasswordDisplay();
+    const sEl = document.getElementById('cfg_ssid'); if (sEl) sEl.textContent = ssid || '(chưa có)';
+    const tEl = document.getElementById('cfg_token'); if (tEl) tEl.textContent = token || '(chưa có)';
+    const srvEl = document.getElementById('cfg_server'); if (srvEl) srvEl.textContent = server || '(chưa có)';
+    const prtEl = document.getElementById('cfg_port'); if (prtEl) prtEl.textContent = port || '(chưa có)';
+    const statusEl = document.getElementById('deviceStatus'); if (statusEl) statusEl.innerHTML = 'Trạng thái thiết bị: Đang cố gắng kết nối STA...';
+
     alert("✅ Cấu hình đã được gửi đến thiết bị!");
 });
