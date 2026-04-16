@@ -6,7 +6,7 @@ void Load_info_File()
   // Ensure LittleFS is mounted before attempting to read
   if (!LittleFS.begin(true))
   {
-    Serial.println("❌ LittleFS begin failed in Load_info_File");
+    Serial.println("LittleFS begin failed in Load_info_File");
     return;
   }
 
@@ -58,7 +58,7 @@ void Save_info_File(String wifi_ssid, String wifi_pass, String CORE_IOT_TOKEN, S
   // Ensure LittleFS is mounted before attempting to write
   if (!LittleFS.begin(true))
   {
-    Serial.println("❌ LittleFS begin failed in Save_info_File");
+    Serial.println("LittleFS begin failed in Save_info_File");
   }
 
   File configFile = LittleFS.open("/info.dat", "w");
@@ -100,7 +100,7 @@ bool check_info_File(bool check)
   {
     if (!LittleFS.begin(true))
     {
-      Serial.println("❌ Lỗi khởi động LittleFS!");
+      Serial.println("Lỗi khởi động LittleFS!");
       return false;
     }
     Load_info_File();

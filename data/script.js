@@ -1,7 +1,8 @@
 // ==================== WEBSOCKET ====================
 var gateway = `ws://${window.location.hostname}/ws`;
 var websocket;
-
+var realtimeChart;
+const MAX_DATA_POINTS = 20; // Số lượng điểm dữ liệu hiển thị trên biểu đồ
 window.addEventListener('load', onLoad);
 
 function onLoad(event) {
@@ -94,6 +95,7 @@ function onMessage(event) {
             }
             if (t !== null && gaugeTemp) gaugeTemp.refresh(t);
             if (h !== null && gaugeHumi) gaugeHumi.refresh(h);
+            updateChart(t, h);
         }
     } catch (e) {
         console.warn("Không phải JSON hợp lệ:", event.data);
@@ -189,6 +191,36 @@ window.onload = function () {
         gaugeColor: "transparent",
         levelColorsGradient: true,
         levelColors: ["#42A5F5", "#00BCD4", "#0288D1"]
+    });
+    // Khởi tạo Chart.js
+    const ctx = document.getElementById('realtimeChart').getContext('2d');
+    realtimeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [], // Thời gian sẽ hiển thị ở đây
+            datasets: [{
+                label: 'Nhiệt độ (°C)',
+                borderColor: '#F44336',
+                backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                data: [],
+                borderWidth: 2,
+                tension: 0.4 // Tạo độ cong cho đường
+            }, {
+                label: 'Độ ẩm (%)',
+                borderColor: '#2196F3',
+                backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                data: [],
+                borderWidth: 2,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { title: { display: true, text: 'Thời gian' } },
+                y: { beginAtZero: false }
+            }
+        }
     });
 };
 
@@ -309,3 +341,27 @@ document.getElementById("settingsForm").addEventListener("submit", function (e) 
 
     alert("✅ Cấu hình đã được gửi đến thiết bị!");
 });
+
+
+function updateChart(temp, humi) {
+    if (!realtimeChart) return;
+
+    const now = new Date();
+    const timeString = now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds();
+
+    // Thêm nhãn thời gian mới
+    realtimeChart.data.labels.push(timeString);
+    
+    // Thêm dữ liệu mới (nếu giá trị null thì lấy giá trị cuối cùng để đường không bị đứt)
+    realtimeChart.data.datasets[0].data.push(temp);
+    realtimeChart.data.datasets[1].data.push(humi);
+
+    // Nếu quá nhiều điểm dữ liệu, xóa điểm cũ nhất để biểu đồ "trượt"
+    if (realtimeChart.data.labels.length > MAX_DATA_POINTS) {
+        realtimeChart.data.labels.shift();
+        realtimeChart.data.datasets[0].data.shift();
+        realtimeChart.data.datasets[1].data.shift();
+    }
+
+    realtimeChart.update('none'); // Update mà không cần hiệu ứng animation nặng để mượt hơn
+}
