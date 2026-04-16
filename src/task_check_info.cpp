@@ -1,7 +1,15 @@
 #include "task_check_info.h"
+#include "global.h"
 
 void Load_info_File()
 {
+  // Ensure LittleFS is mounted before attempting to read
+  if (!LittleFS.begin(true))
+  {
+    Serial.println("LittleFS begin failed in Load_info_File");
+    return;
+  }
+
   File file = LittleFS.open("/info.dat", "r");
   if (!file)
   {
@@ -15,11 +23,13 @@ void Load_info_File()
   }
   else
   {
-    WIFI_SSID = strdup(doc["WIFI_SSID"]);
-    WIFI_PASS = strdup(doc["WIFI_PASS"]);
-    CORE_IOT_TOKEN = strdup(doc["CORE_IOT_TOKEN"]);
-    CORE_IOT_SERVER = strdup(doc["CORE_IOT_SERVER"]);
-    CORE_IOT_PORT = strdup(doc["CORE_IOT_PORT"]);
+    String ssid = String((const char*)doc["WIFI_SSID"]);
+    String pass = String((const char*)doc["WIFI_PASS"]);
+    String token = String((const char*)doc["CORE_IOT_TOKEN"]);
+    String server = String((const char*)doc["CORE_IOT_SERVER"]);
+    String port = String((const char*)doc["CORE_IOT_PORT"]);
+    set_wifi_credentials(ssid, pass);
+    set_core_iot_info(token, server, port);
   }
   file.close();
 }
@@ -45,6 +55,12 @@ void Save_info_File(String wifi_ssid, String wifi_pass, String CORE_IOT_TOKEN, S
   doc["CORE_IOT_SERVER"] = CORE_IOT_SERVER;
   doc["CORE_IOT_PORT"] = CORE_IOT_PORT;
 
+  // Ensure LittleFS is mounted before attempting to write
+  if (!LittleFS.begin(true))
+  {
+    Serial.println("LittleFS begin failed in Save_info_File");
+  }
+
   File configFile = LittleFS.open("/info.dat", "w");
   if (configFile)
   {
@@ -55,7 +71,27 @@ void Save_info_File(String wifi_ssid, String wifi_pass, String CORE_IOT_TOKEN, S
   {
     Serial.println('Unable to save the configuration.');
   }
-  ESP.restart();
+  // Apply credentials in-memory so background STA attempt can read them
+  set_wifi_credentials(wifi_ssid, wifi_pass);
+  set_core_iot_info(CORE_IOT_TOKEN, CORE_IOT_SERVER, CORE_IOT_PORT);
+
+  // Notify clients we're starting connection attempt and include saved config
+  String status = "{";
+  status += "\"type\":\"status\",";
+  status += "\"state\":\"connecting\",";
+  status += "\"sta\":\"0.0.0.0\",";
+  status += "\"ap\":\"" + WiFi.softAPIP().toString() + "\",";
+  status += "\"config\":{";
+  status += "\"ssid\":\"" + wifi_ssid + "\",";
+  status += "\"password\":\"" + wifi_pass + "\",";
+  status += "\"token\":\"" + CORE_IOT_TOKEN + "\",";
+  status += "\"server\":\"" + CORE_IOT_SERVER + "\",";
+  status += "\"port\":\"" + CORE_IOT_PORT + "\"";
+  status += "}}";
+  Webserver_sendata(status);
+
+  // Start STA connection asynchronously while keeping AP/webserver alive
+  startSTAAsync();
 };
 
 bool check_info_File(bool check)
@@ -64,13 +100,15 @@ bool check_info_File(bool check)
   {
     if (!LittleFS.begin(true))
     {
-      Serial.println("❌ Lỗi khởi động LittleFS!");
+      Serial.println("Lỗi khởi động LittleFS!");
       return false;
     }
     Load_info_File();
   }
   
-  if (WIFI_SSID.isEmpty() && WIFI_PASS.isEmpty())
+  String ssid, pass;
+  get_wifi_credentials(ssid, pass);
+  if (ssid.isEmpty() && pass.isEmpty())
   {
     if (!check)
     {

@@ -15,5 +15,7 @@ extern AsyncWebSocket ws;
 void Webserver_stop();
 void Webserver_reconnect();
 void Webserver_sendata(String data);
+// Log a text message to Serial and broadcast to connected WebSocket clients
+void Webserver_log(const String &msg);
 
 #endif

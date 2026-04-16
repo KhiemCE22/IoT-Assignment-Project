@@ -1,5 +1,6 @@
 
 #include "task_core_iot.h"
+#include "global.h"
 
 constexpr uint32_t MAX_MESSAGE_SIZE = 1024U;
 
@@ -83,7 +84,9 @@ void CORE_IOT_reconnect()
 {
     if (!tb.connected())
     {
-        if (!tb.connect(CORE_IOT_SERVER.c_str(), CORE_IOT_TOKEN.c_str(), CORE_IOT_PORT.toInt()))
+        String token, server, port;
+        get_core_iot_info(token, server, port);
+        if (!tb.connect(server.c_str(), token.c_str(), port.toInt()))
         {
             // Serial.println("Failed to connect");
             return;
