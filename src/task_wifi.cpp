@@ -49,7 +49,7 @@ void sta_connect_task(void *pvParameters)
         return;
     }
 
-    Webserver_log("🔁 Bắt đầu kết nối STA (nền) đến: " + ssid);
+    Webserver_log("Bắt đầu kết nối STA (nền) đến: " + ssid);
 
     // Set AP+STA mode so softAP stays available while trying STA
     WiFi.mode(WIFI_AP_STA);
@@ -76,7 +76,7 @@ void sta_connect_task(void *pvParameters)
             status += "\"ap\":\"" + WiFi.softAPIP().toString() + "\"";
             status += "}";
             Webserver_sendata(status);
-            Webserver_log("✅ STA connected: " + WiFi.localIP().toString());
+            Webserver_log("STA connected: " + WiFi.localIP().toString());
             give_internet_semaphore();
             vTaskDelete(NULL);
             return;
@@ -108,7 +108,7 @@ void sta_connect_task(void *pvParameters)
     fail += "\"ap\":\"" + WiFi.softAPIP().toString() + "\"";
     fail += "}";
     Webserver_sendata(fail);
-    Webserver_log("❌ STA connection failed (timeout)");
+    Webserver_log("STA connection failed (timeout)");
     vTaskDelete(NULL);
 }
 
