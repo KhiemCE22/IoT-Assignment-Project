@@ -52,29 +52,25 @@ void tiny_ml_task(void *pvParameters)
 
     while (1)
     {
-
-        // Prepare input data (e.g., sensor readings)
+        // Prepare input data from sensor queue (non-blocking)
         SensorData_t sd;
-        if (get_last_sensor_data(sd)) {
+        while (xQueueReceive(sensorQueue, &sd, 0) == pdTRUE) {
             input->data.f[0] = sd.temperature;
             input->data.f[1] = sd.humidity;
-        } else {
-            input->data.f[0] = NAN;
-            input->data.f[1] = NAN;
-        }
 
-        // Run inference
-        TfLiteStatus invoke_status = interpreter->Invoke();
-        if (invoke_status != kTfLiteOk)
-        {
-            error_reporter->Report("Invoke failed");
-            return;
-        }
+            // Run inference
+            TfLiteStatus invoke_status = interpreter->Invoke();
+            if (invoke_status != kTfLiteOk)
+            {
+                error_reporter->Report("Invoke failed");
+                return;
+            }
 
-        // Get and process output
-        float result = output->data.f[0];
-        Serial.print("Inference result: ");
-        Serial.println(result);
+            // Get and process output
+            float result = output->data.f[0];
+            Serial.print("Inference result: ");
+            Serial.println(result);
+        }
 
         vTaskDelay(5000);
     }

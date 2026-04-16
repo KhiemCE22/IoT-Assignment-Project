@@ -121,16 +121,13 @@ void coreiot_task(void *pvParameters){
         }
         client.loop();
 
-        // Sample payload, publish to 'v1/devices/me/telemetry'
-        SensorData_t sd;
-        if (!get_last_sensor_data(sd)) {
-          sd.temperature = NAN; sd.humidity = NAN;
-        }
+        // Get latest sensor data from queue (non-blocking)
+        SensorData_t sd = {NAN, NAN};
+        xQueueReceive(sensorQueue, &sd, 0);
+        
         String payload = "{\"temperature\":" + String(sd.temperature) +  ",\"humidity\":" + String(sd.humidity) + "}";
         client.publish("v1/devices/me/telemetry", payload.c_str());
 
-
-        
         Serial.println("Published payload: " + payload);
         vTaskDelay(10000);  // Publish every 10 seconds
     }

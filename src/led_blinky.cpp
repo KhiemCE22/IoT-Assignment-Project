@@ -33,11 +33,10 @@ void led_blinky(void *pvParameters){
   TickType_t lastToggle = xTaskGetTickCount();
 
   while(1) {
-    // If a new temperature sample is available, update the blink pattern.
-    if (take_led_semaphore(0) == pdTRUE) {
-      SensorData_t sd;
-      float t = NAN;
-      if (get_last_sensor_data(sd)) t = sd.temperature;
+    // Check if fresh sensor data is available from the queue (non-blocking)
+    SensorData_t sd;
+    while (xQueueReceive(ledQueue, &sd, 0) == pdTRUE) {
+      float t = sd.temperature;
 
       // Choose blink pattern based on temperature ranges
       if (t < 0) {

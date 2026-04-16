@@ -44,15 +44,13 @@ void temp_humi_monitor(void *pvParameters){
             humidity = -1;
         }
 
-        // Push sensor data to queue and update last-known value.
+        // Push sensor data directly to all consumer queues
         SensorData_t d;
         d.temperature = temperature;
         d.humidity = humidity;
-        push_sensor_data(d, 0);
-
-        // Notify display and LED tasks that fresh data is available.
-        give_led_semaphore();
-        give_neo_semaphore();
+        xQueueSend(sensorQueue, &d, 0);
+        xQueueSend(ledQueue, &d, 0);
+        xQueueSend(neoQueue, &d, 0);
 
         // Log to serial and web
         {
