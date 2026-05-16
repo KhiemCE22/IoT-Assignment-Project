@@ -1,7 +1,10 @@
 #include "temp_humi_monitor.h"
+#include "TinyML_task.h"
+
 DHT20 dht20;
 LiquidCrystal_I2C lcd(33,16,2);
 
+RawSensorData data;
 
 void temp_humi_monitor(void *pvParameters){
 
@@ -18,8 +21,6 @@ void temp_humi_monitor(void *pvParameters){
         // Reading humidity
         float humidity = dht20.getHumidity();
 
-        
-
         // Check if any reads failed and exit early
         if (isnan(temperature) || isnan(humidity)) {
             Serial.println("Failed to read from DHT sensor!");
@@ -31,8 +32,12 @@ void temp_humi_monitor(void *pvParameters){
         glob_temperature = temperature;
         glob_humidity = humidity;
 
+        // Send data to TinyML Task via Queue
+        data.temperature = temperature;
+        data.humidity = humidity;
+        xQueueSend(sensorQueue, &data, portMAX_DELAY);
+
         // Print the results
-        
         Serial.print("Humidity: ");
         Serial.print(humidity);
         Serial.print("%  Temperature: ");
