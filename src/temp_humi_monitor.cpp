@@ -1,4 +1,6 @@
 #include "temp_humi_monitor.h"
+#include "TinyML_task.h"
+
 #include "global.h"
 #include "task_webserver.h"
 DHT20 dht20;
@@ -6,6 +8,7 @@ LiquidCrystal_I2C lcd(33,16,2);
 
 
 void temp_humi_monitor(void *pvParameters){
+    RawSensorData data;
 
     // Sensor / I2C initialization
     Wire.begin(11, 12);
@@ -45,12 +48,11 @@ void temp_humi_monitor(void *pvParameters){
         }
 
         // Push sensor data directly to all consumer queues
-        SensorData_t d;
-        d.temperature = temperature;
-        d.humidity = humidity;
-        xQueueSend(sensorQueue, &d, 0);
-        xQueueSend(ledQueue, &d, 0);
-        xQueueSend(neoQueue, &d, 0);
+        data.temperature = temperature;
+        data.humidity = humidity;
+        xQueueSend(sensorQueue, &data, 0);
+        xQueueSend(ledQueue, &data, 0);
+        xQueueSend(neoQueue, &data, 0);
 
         // Log to serial and web
         {
