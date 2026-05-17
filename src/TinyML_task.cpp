@@ -2,13 +2,12 @@
 #include "AnomalyDetector.h"
 #include "AIFeatureEngine.h"
 #include "TinyML_task.h"
+#include "global.h"
 
-QueueHandle_t sensorQueue;
 
 void tinyMLTask(void *pvParameters) {
 
     setupTime();
-    sensorQueue = xQueueCreate(10, sizeof(RawSensorData));
     
     // 1. Khởi tạo các đối tượng cục bộ bên trong Task (Không biến toàn cục)
     static AnomalyDetector detector;
@@ -27,7 +26,7 @@ void tinyMLTask(void *pvParameters) {
     while (1) {
         // 2. Chờ nhận dữ liệu từ Queue cảm biến
         // Ở đây ta chờ tối đa 2 giây, nếu không có dữ liệu thì loop lại
-        if (xQueueReceive(sensorQueue, &receivedData, pdMS_TO_TICKS(2000)) == pdPASS) {
+        if (xQueueReceive(tinyQueue, &receivedData, pdMS_TO_TICKS(2000)) == pdPASS) {
 
             // Serial.print("Humidity: ");
             // Serial.print(receivedData.humidity);
@@ -58,7 +57,19 @@ void tinyMLTask(void *pvParameters) {
                 } else {
                     Serial.printf("[OK] Trạng thái bình thường (%.4f)\n", anomaly_score);
                 }
-                
+                AIAnomalyResult aiResult = {
+                    anomaly_score,
+                    anomaly_score > 0.5f
+                };
+
+                if (aiResultQueue) {
+                    if (xQueueSend(aiResultQueue, &aiResult, 0) != pdTRUE) {
+                        AIAnomalyResult droppedResult;
+                        xQueueReceive(aiResultQueue, &droppedResult, 0);
+                        xQueueSend(aiResultQueue, &aiResult, 0);
+                    }
+                }
+
                 // Log hiệu suất để đánh giá (Nhiệm vụ 5)
                 Serial.printf("   > Thời gian suy luận: %lu ms\n", inference_time);
             }

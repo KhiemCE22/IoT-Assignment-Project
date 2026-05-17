@@ -1,8 +1,10 @@
 #include "global.h"
 // Exported queues for direct use by tasks (no wrapper functions)
-QueueHandle_t sensorQueue = NULL;   // Used by polling tasks (tinyml, coreiot)
 QueueHandle_t ledQueue = NULL;      // Used by led_blinky task
 QueueHandle_t neoQueue = NULL;      // Used by neo_blinky task
+QueueHandle_t tinyQueue = NULL;     // Used by tinyML task
+QueueHandle_t gatewayQueue = NULL;  // Used by gateway task
+QueueHandle_t aiResultQueue = NULL; // Used by LCD task
 static SemaphoreHandle_t semInternet = NULL;
 
 static String wifi_ssid_internal = "";
@@ -13,19 +15,19 @@ static String wifi_user_password = "12345678";
 static String core_token_internal = "";
 static String core_server_internal = "";
 static String core_port_internal = "";
-
+	
 static volatile bool wifi_connected_internal = false;
 
 void system_state_init() {
-	if (sensorQueue == NULL) {
-		// queue holds last few samples
-		sensorQueue = xQueueCreate(5, sizeof(SensorData_t));
-	}
+	// Create binary semaphore for internet connectivity state
 	if (semInternet == NULL) semInternet = xSemaphoreCreateBinary();
 
 	// queues for notifying LED and Neo tasks with full SensorData_t copies
-	if (ledQueue == NULL) ledQueue = xQueueCreate(5, sizeof(SensorData_t));
-	if (neoQueue == NULL) neoQueue = xQueueCreate(5, sizeof(SensorData_t));
+	if (ledQueue == NULL) ledQueue = xQueueCreate(5, sizeof(RawSensorData));
+	if (neoQueue == NULL) neoQueue = xQueueCreate(5, sizeof(RawSensorData));
+	if (tinyQueue == NULL) tinyQueue = xQueueCreate(5, sizeof(RawSensorData));
+	if (gatewayQueue == NULL) gatewayQueue = xQueueCreate(5, sizeof(RawSensorData));
+	if (aiResultQueue == NULL) aiResultQueue = xQueueCreate(3, sizeof(AIAnomalyResult));
 }
 
 void give_internet_semaphore(){ if (semInternet) xSemaphoreGive(semInternet); }

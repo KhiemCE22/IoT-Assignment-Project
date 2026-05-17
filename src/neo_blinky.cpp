@@ -29,7 +29,7 @@ void neo_blinky(void *pvParameters){
 
     while(1) {
         // Get latest humidity sensor data from the queue (non-blocking)
-        SensorData_t sd;
+        RawSensorData sd;
         while (xQueueReceive(neoQueue, &sd, 0) == pdTRUE) {
             float h = sd.humidity;
 

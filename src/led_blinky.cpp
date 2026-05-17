@@ -34,7 +34,7 @@ void led_blinky(void *pvParameters){
 
   while(1) {
     // Check if fresh sensor data is available from the queue (non-blocking)
-    SensorData_t sd;
+    RawSensorData sd;
     while (xQueueReceive(ledQueue, &sd, 0) == pdTRUE) {
       float t = sd.temperature;
 

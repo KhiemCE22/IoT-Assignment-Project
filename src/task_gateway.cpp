@@ -1,4 +1,4 @@
-#include "gateway.h"
+#include "task_gateway.h"
 
 // ----------- CONFIGURE THESE! -----------
 const char* gateway_Server = "192.168.1.200";  
@@ -70,9 +70,9 @@ void gateway_task(void *pvParameters){
         }
         client_pi.loop();
 
-        SensorData_t sd = {NAN, NAN};
+        RawSensorData sd = {NAN, NAN};
         // Get latest sensor data from queue (non-blocking)
-        if (xQueueReceive(sensorQueue, &sd, 0) == pdTRUE) {
+        if (xQueueReceive(gatewayQueue, &sd, 0) == pdTRUE) {
             String payload = "{\"temperature\":" + String(sd.temperature) + ",\"humidity\":" + String(sd.humidity) + "}";
             
             // Topic: nodes/ESP32_001
