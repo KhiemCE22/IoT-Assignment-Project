@@ -28,11 +28,10 @@ void neo_blinky(void *pvParameters){
     uint32_t currentColor = 0;
 
     while(1) {
-        // If a new humidity sample is available, update the color mapping
-        if (take_neo_semaphore(0) == pdTRUE) {
-            SensorData_t sd;
-            float h = NAN;
-            if (get_last_sensor_data(sd)) h = sd.humidity;
+        // Get latest humidity sensor data from the queue (non-blocking)
+        SensorData_t sd;
+        while (xQueueReceive(neoQueue, &sd, 0) == pdTRUE) {
+            float h = sd.humidity;
 
             if (h < 0) {
                 currentColor = strip.Color(80, 0, 80); // purple = error
@@ -51,7 +50,7 @@ void neo_blinky(void *pvParameters){
             strip.show();
         }
 
-        // Keep task responsive; sleep briefly before checking semaphore again.
+        // Keep task responsive; sleep briefly before checking for new data again.
         vTaskDelay(pdMS_TO_TICKS(50));
     }
 }
