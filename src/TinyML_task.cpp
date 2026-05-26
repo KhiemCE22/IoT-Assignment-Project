@@ -19,7 +19,7 @@ void tinyMLTask(void *pvParameters) {
         vTaskDelete(NULL);
     }
 
-    RawSensorData receivedData;
+    SensorData_t receivedData;
 
     Serial.println("[+] tinyMLTask is running...");
 
@@ -57,19 +57,6 @@ void tinyMLTask(void *pvParameters) {
                 } else {
                     Serial.printf("[OK] Trạng thái bình thường (%.4f)\n", anomaly_score);
                 }
-                AIAnomalyResult aiResult = {
-                    anomaly_score,
-                    anomaly_score > 0.5f
-                };
-
-                if (aiResultQueue) {
-                    if (xQueueSend(aiResultQueue, &aiResult, 0) != pdTRUE) {
-                        AIAnomalyResult droppedResult;
-                        xQueueReceive(aiResultQueue, &droppedResult, 0);
-                        xQueueSend(aiResultQueue, &aiResult, 0);
-                    }
-                }
-
                 // Log hiệu suất để đánh giá (Nhiệm vụ 5)
                 Serial.printf("   > Thời gian suy luận: %lu ms\n", inference_time);
             }

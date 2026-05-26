@@ -23,11 +23,10 @@ void system_state_init() {
 	if (semInternet == NULL) semInternet = xSemaphoreCreateBinary();
 
 	// queues for notifying LED and Neo tasks with full SensorData_t copies
-	if (ledQueue == NULL) ledQueue = xQueueCreate(5, sizeof(RawSensorData));
-	if (neoQueue == NULL) neoQueue = xQueueCreate(5, sizeof(RawSensorData));
-	if (tinyQueue == NULL) tinyQueue = xQueueCreate(5, sizeof(RawSensorData));
-	if (gatewayQueue == NULL) gatewayQueue = xQueueCreate(5, sizeof(RawSensorData));
-	if (aiResultQueue == NULL) aiResultQueue = xQueueCreate(3, sizeof(AIAnomalyResult));
+	if (ledQueue == NULL) ledQueue = xQueueCreate(5, sizeof(SensorData_t));
+	if (neoQueue == NULL) neoQueue = xQueueCreate(5, sizeof(SensorData_t));
+	if (tinyQueue == NULL) tinyQueue = xQueueCreate(5, sizeof(SensorData_t));
+	if (gatewayQueue == NULL) gatewayQueue = xQueueCreate(5, sizeof(SensorData_t));
 }
 
 void give_internet_semaphore(){ if (semInternet) xSemaphoreGive(semInternet); }

@@ -11,12 +11,9 @@
 typedef struct {
 	float temperature;
 	float humidity;
-} RawSensorData;
+} SensorData_t;
 
-typedef struct {
-	float score;
-	bool isAnomaly;
-} AIAnomalyResult;
+
 
 // Initialize internal queues/semaphores. Call once at startup before tasks.
 void system_state_init();
@@ -27,7 +24,7 @@ extern QueueHandle_t ledQueue;       // for LED task
 extern QueueHandle_t neoQueue;       // for Neo task
 extern QueueHandle_t tinyQueue;    // for TinyML task
 extern QueueHandle_t gatewayQueue; // for Gateway task
-extern QueueHandle_t aiResultQueue; // TinyML task sends AIAnomalyResult to LCD task
+
 
 // Internet semaphore
 BaseType_t take_internet_semaphore(TickType_t ticksToWait);
